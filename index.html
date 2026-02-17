@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AI Product Classifier</title>
+
+<style>
+*{
+    box-sizing:border-box;
+    font-family:'Inter','Segoe UI',system-ui,sans-serif;
+}
+
+/* ===== ANIMATED GRADIENT BACKGROUND ===== */
+body{
+    margin:0;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    overflow:hidden;
+    background:linear-gradient(
+        120deg,
+        #eb8d78,
+        #edae9a,
+        #e4de87,
+        #ec8a6d
+    );
+    background-size:300% 300%;
+    animation:bgMove 18s ease infinite;
+}
+
+@keyframes bgMove{
+    0%{background-position:0% 50%}
+    50%{background-position:100% 50%}
+    100%{background-position:0% 50%}
+}
+
+/* floating glow blobs */
+.bg-blob{
+    position:absolute;
+    width:420px;
+    height:420px;
+    border-radius:50%;
+    filter:blur(140px);
+    opacity:.45;
+    animation:float 14s infinite alternate ease-in-out;
+}
+.blob1{background:#a1a6f2; top:-140px; left:-140px;}
+.blob2{background:#95ebf8; bottom:-160px; right:-160px; animation-delay:-7s;}
+
+@keyframes float{
+    from{transform:translateY(-40px)}
+    to{transform:translateY(40px)}
+}
+
+/* ===== CARD ===== */
+.container{
+    width:460px;
+    padding:36px;
+    border-radius:32px;
+    background:rgba(255,255,255,0.92);
+    backdrop-filter:blur(22px);
+    box-shadow:0 50px 120px rgba(30,120,214,.35);
+    position:relative;
+    z-index:2;
+}
+
+/* ===== AI ICON ===== */
+.ai-icon{
+    width:56px;
+    height:56px;
+    margin:0 auto 10px;
+    border-radius:16px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:30px;
+    background:linear-gradient(135deg,#131e2b,#22d3ee);
+    color:#e4b3b3;
+    box-shadow:
+        0 12px 30px rgba(96,165,250,.6),
+        inset 0 1px 0 rgba(255,255,255,.6);
+}
+
+/* ===== HEADER ===== */
+h1{
+    margin:0;
+    text-align:center;
+    font-size:28px;
+    font-weight:700;
+    color:#0b3c6d;
+}
+
+.subtitle{
+    text-align:center;
+    margin:6px 0 28px;
+    font-size:13px;
+    color:#4f6f8f;
+}
+
+/* ===== FIELDS ===== */
+.field{ margin-bottom:18px; }
+
+.field label{
+    display:block;
+    font-size:13px;
+    font-weight:600;
+    color:#1e4f8a;
+    margin-bottom:6px;
+}
+
+.field input{
+    width:100%;
+    padding:14px 16px;
+    border-radius:18px;
+    border:1px solid #b7d7ff;
+    background:#f5faff;
+    font-size:14px;
+    color:#0b3c6d;
+    transition:.25s;
+}
+
+.field input:focus{
+    outline:none;
+    border-color:#3b82f6;
+    box-shadow:0 0 0 4px rgba(59,130,246,.25);
+}
+
+.field input[readonly]{
+    background:linear-gradient(180deg,#eef6ff,#e6f0ff);
+}
+
+/* ===== BUTTONS (ANIMATED + GLOSSY) ===== */
+.actions{
+    display:flex;
+    gap:14px;
+    margin-top:18px;
+}
+
+button{
+    flex:1;
+    padding:14px;
+    border:none;
+    border-radius:18px;
+    font-weight:700;
+    font-size:14px;
+    cursor:pointer;
+    position:relative;
+    overflow:hidden;
+}
+
+/* reset */
+.btn-reset{
+    background:linear-gradient(180deg,#f1f5f9,#e2e8f0);
+    color:#334155;
+}
+
+/* classify glossy animated */
+.btn-predict{
+    background:linear-gradient(135deg,#3b82f6,#2563eb,#22d3ee);
+    background-size:200% 200%;
+    color:#ffffff;
+    box-shadow:
+        0 18px 40px rgba(37,99,235,.55),
+        inset 0 1px 0 rgba(255,255,255,.4);
+    animation:btnGlow 3s ease infinite;
+}
+
+@keyframes btnGlow{
+    0%{background-position:0% 50%}
+    50%{background-position:100% 50%}
+    100%{background-position:0% 50%}
+}
+
+/* shine on hover */
+.btn-predict::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:linear-gradient(
+        120deg,
+        transparent 30%,
+        rgba(255,255,255,.6),
+        transparent 70%
+    );
+    transform:translateX(-100%);
+}
+.btn-predict:hover::after{
+    animation:shine .8s;
+}
+
+@keyframes shine{
+    to{transform:translateX(100%)}
+}
+
+.btn-predict.loading{
+    opacity:.7;
+    pointer-events:none;
+}
+
+/* ===== RESULT (BLUE + GREEN SUCCESS) ===== */
+.result{
+    margin-top:32px;
+    padding:24px;
+    border-radius:24px;
+    background:linear-gradient(135deg,#e0f2fe,#ecfeff,#dcfce7);
+    border:1px solid #86efac;
+    box-shadow:0 22px 50px rgba(34,197,94,.35);
+}
+
+.result h2{
+    margin:0;
+    font-size:22px;
+    color:#064e3b;
+    font-weight:800;
+}
+
+/* confidence bar */
+.confidence-bar{
+    margin-top:14px;
+    height:12px;
+    background:#bbf7d0;
+    border-radius:20px;
+    overflow:hidden;
+}
+
+.confidence-fill{
+    height:100%;
+    background:linear-gradient(135deg,#22c55e,#16a34a);
+    width:0%;
+    animation:load 1.2s forwards;
+}
+
+@keyframes load{
+    to{ width:var(--confidence); }
+}
+
+/* ===== ERROR ===== */
+.error{
+    margin-top:22px;
+    padding:18px;
+    border-radius:18px;
+    background:#fee2e2;
+    border:1px solid #fca5a5;
+    color:#7f1d1d;
+    font-weight:600;
+}
+</style>
+</head>
+
+<body>
+
+<div class="bg-blob blob1"></div>
+<div class="bg-blob blob2"></div>
+
+<div class="container">
+
+    <div class="ai-icon">🤖</div>
+
+    <h1>AI Product Classifier</h1>
+    <div class="subtitle">Intelligent category prediction</div>
+
+    <form action="/predict" method="POST" id="form">
+
+        <div class="field">
+            <label>Quantity</label>
+            <input type="number" name="quantity" id="qty" required>
+        </div>
+
+        <div class="field">
+            <label>Unit Price (₹)</label>
+            <input type="number" step="any" name="unit_price" id="price" required>
+        </div>
+
+        <div class="field">
+            <label>Revenue (₹)</label>
+            <input type="number" id="revenue" readonly>
+        </div>
+
+        <div class="field">
+            <label>Profit (₹)</label>
+            <input type="number" id="profit" readonly>
+        </div>
+
+        <div class="field">
+            <label>Purchase Price (₹)</label>
+            <input type="number" step="any" name="purchase_price" id="purchase_price" required>
+        </div>
+
+        <div class="actions">
+            <button type="button" class="btn-reset" onclick="resetForm()">Reset</button>
+            <button type="submit" class="btn-predict" id="predictBtn">Classify</button>
+        </div>
+    </form>
+
+    {% if result %}
+    <div class="result">
+        <h2>{{ result }}</h2>
+        <div class="confidence-bar">
+            <div class="confidence-fill" style="--confidence: {{ confidence }}%;"></div>
+        </div>
+        <div style="margin-top:10px;font-size:14px;color:#064e3b;font-weight:700;">
+            Model confidence: {{ confidence }}%
+        </div>
+    </div>
+    {% endif %}
+
+    {% if error %}
+    <div class="error">{{ error }}</div>
+    {% endif %}
+
+</div>
+
+<script>
+const qty = document.getElementById("qty");
+const price = document.getElementById("price");
+const purchase = document.getElementById("purchase_price");
+const revenue = document.getElementById("revenue");
+const profit = document.getElementById("profit");
+const predictBtn = document.getElementById("predictBtn");
+
+function updateCalc(){
+    const q = parseFloat(qty.value) || 0;
+    const p = parseFloat(price.value) || 0;
+    const cp = parseFloat(purchase.value) || 0;
+
+    const r = q * p;
+    const prof = r - (q * cp);
+
+    revenue.value = r ? r.toFixed(2) : "";
+    profit.value = r ? prof.toFixed(2) : "";
+}
+
+qty.addEventListener("input", updateCalc);
+price.addEventListener("input", updateCalc);
+purchase.addEventListener("input", updateCalc);
+
+document.getElementById("form").addEventListener("submit", ()=>{
+    predictBtn.classList.add("loading");
+    predictBtn.innerText = "Predicting...";
+});
+
+function resetForm(){
+    document.getElementById("form").reset();
+    revenue.value="";
+    profit.value="";
+    predictBtn.innerText="Classify";
+    predictBtn.classList.remove("loading");
+}
+</script>
+
+</body>
+</html>
